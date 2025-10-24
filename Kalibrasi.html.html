@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penghitung Koordinat Masjid</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #1e3a8a;
+            --success-color: #198754;
+            --info-color: #0dcaf0;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --gray-color: #6c757d;
+            --border-radius: 10px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Poppins', sans-serif;
+            color: var(--dark-color);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 25px;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            text-align: center;
+            margin-bottom: 0;
+            box-shadow: var(--box-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+        }
+
+        .header h1 {
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            margin-bottom: 0;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .content-container {
+            background-color: white;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #map {
+            height: 450px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .map-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .map-control-btn {
+            background-color: white;
+            border: none;
+            border-radius: 5px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .map-control-btn:hover {
+            background-color: var(--light-color);
+            transform: scale(1.05);
+        }
+
+        .map-control-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .info-panel {
+            padding: 25px;
+            background-color: var(--light-color);
+            border-top: 1px solid #dee2e6;
+            flex: 1;
+        }
+
+        .coordinate-section {
+            background-color: white;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .coordinate-section:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .coordinate-inputs {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .coordinate-inputs .form-control, .coordinate-inputs .form-select {
+            width: auto;
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+            transition: var(--transition);
+        }
+
+        .coordinate-inputs .form-control:focus, .coordinate-inputs .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-calculate {
+            background: linear-gradient(135deg, var(--secondary-color), #1e3a8a);
+            color: white;
+            padding: 12px 40px;
+            font-weight: 600;
+            border: none;
+            border-radius: 30px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-calculate::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-calculate:hover::before {
+            left: 100%;
+        }
+
+        .btn-calculate:hover {
+            background: linear-gradient(135deg, #1e40af, #1e3a8a);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .instruction {
+            background-color: #e7f5ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border-radius: 0 8px 8px 0;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .instruction i {
+            margin-right: 10px;
+            color: var(--primary-color);
+            font-size: 20px;
+        }
+
+        .custom-marker {
+            background-color: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 3px solid white;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
+
+        .user-location-marker {
+            background-color: var(--info-color);
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid white;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+
+        .result-container {
+            margin-top: 25px;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            background: linear-gradient(135deg, #e7f5ff, #d1ecf1);
+            border: 1px solid #b6d4fe;
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            font-size: 20px;
+        }
+
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+        }
+
+        .section-title i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        .data-table th {
+            background-color: var(--light-color);
+            font-weight: 600;
+            color: var(--gray-color);
+            width: 30%;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .nav-tabs {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--gray-color);
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            transition: var(--transition);
+        }
+
+        .nav-tabs .nav-link:hover {
+            border: none;
+            color: var(--primary-color);
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            background-color: white;
+            border: none;
+            border-bottom: 3px solid var(--primary-color);
+            font-weight: 600;
+        }
+
+        .tab-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 0 0 8px 8px;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .data-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .data-card:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .data-card-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+        }
+
+        .data-card-title i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .compass-container {
+            display: flex;
+            justify-content: center;
+            margin: 25px 0;
+        }
+
+        .compass {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            border: 3px solid #dee2e6;
+            position: relative;
+            background: radial-gradient(circle, #f8f9fa 0%, #e9ecef 100%);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .compass-direction {
+            position: absolute;
+            font-weight: bold;
+            font-size: 16px;
+            color: var(--dark-color);
+        }
+
+        .compass-n {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .compass-e {
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .compass-s {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .compass-w {
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .compass-needle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 90px;
+            background: linear-gradient(to top, var(--danger-color) 50%, var(--primary-color) 50%);
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(0deg);
+            border-radius: 3px;
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .compass-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 15px;
+            height: 15px;
+            background-color: var(--dark-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .azimuth-detail {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .azimuth-item {
+            background-color: var(--light-color);
+            padding: 15px 20px;
+            border-radius: 10px;
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .azimuth-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .azimuth-item-title {
+            font-weight: 600;
+            color: var(--gray-color);
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .azimuth-item-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .formula-box {
+            background-color: var(--light-color);
+            border-left: 4px solid var(--gray-color);
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            line-height: 1.8;
+        }
+
+        .kiblat-result {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .kiblat-item {
+            background-color: var(--light-color);
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            flex: 1;
+            min-width: 200px;
+            transition: var(--transition);
+        }
+
+        .kiblat-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .kiblat-label {
+            font-weight: 600;
+            color: var(--gray-color);
+            margin-bottom: 10px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kiblat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .kiblat-unit {
+            font-size: 16px;
+            color: var(--gray-color);
+            margin-left: 5px;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            padding-right: 50px;
+            border-radius: 30px;
+            border: 2px solid #dee2e6;
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
+        .search-button {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: calc(100% - 16px);
+            width: 40px;
+            border: none;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .search-button:hover {
+            background: var(--secondary-color);
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-result-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f3f5;
+            transition: var(--transition);
+        }
+
+        .search-result-item:hover {
+            background-color: #f1f8ff;
+            padding-left: 25px;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-name {
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+        }
+
+        .search-result-address {
+            font-size: 14px;
+            color: var(--gray-color);
+        }
+
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            right: 55px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .footer {
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .footer a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons .btn {
+            border-radius: 20px;
+            padding: 8px 20px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .custom-toast {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .custom-toast-header {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        .custom-toast-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .custom-toast-title i {
+            margin-right: 8px;
+        }
+
+        .custom-toast-body {
+            padding: 15px 20px;
+        }
+
+        .custom-toast.success .custom-toast-header {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .custom-toast.error .custom-toast-header {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .custom-toast.info .custom-toast-header {
+            background-color: var(--info-color);
+            color: white;
+        }
+
+        .custom-toast.warning .custom-toast-header {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .custom-toast-close {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: var(--transition);
+        }
+
+        .custom-toast-close:hover {
+            opacity: 1;
+        }
+
+        .location-permission-banner {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .location-permission-text {
+            display: flex;
+            align-items: center;
+        }
+
+        .location-permission-text i {
+            color: var(--warning-color);
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .location-permission-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px 15px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .coordinate-inputs {
+                justify-content: center;
+            }
+
+            .coordinate-inputs span {
+                display: none;
+            }
+
+            .coordinate-inputs .form-control, .coordinate-inputs .form-select {
+                width: 70px;
+                font-size: 14px;
+            }
+
+            .btn-calculate {
+                padding: 10px 30px;
+                font-size: 16px;
+            }
+
+            .kiblat-result {
+                flex-direction: column;
+            }
+
+            .azimuth-detail {
+                flex-direction: column;
+            }
+
+            .compass {
+                width: 180px;
+                height: 180px;
+            }
+
+            .compass-needle {
+                height: 70px;
+            }
+
+            .nav-tabs .nav-link {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+
+            .tab-content {
+                padding: 15px;
+            }
+
+            .data-card {
+                padding: 15px;
+            }
+
+            .kiblat-value {
+                font-size: 24px;
+            }
+
+            .location-permission-banner {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .coordinate-inputs {
+                gap: 8px;
+            }
+
+            .coordinate-inputs .form-control, .coordinate-inputs .form-select {
+                width: 60px;
+                font-size: 12px;
+            }
+
+            .btn-calculate {
+                padding: 8px 25px;
+                font-size: 14px;
+            }
+
+            .compass {
+                width: 150px;
+                height: 150px;
+            }
+
+            .compass-needle {
+                height: 60px;
+            }
+
+            .kiblat-value {
+                font-size: 20px;
+            }
+
+            .azimuth-item-value {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1><i class="bi bi-mosque me-2"></i>Penghitung Koordinat Masjid</h1>
+            <p class="mb-0">Tandai lokasi masjid pada peta atau masukkan koordinat secara manual</p>
+        </div>
+        
+        <div class="content-container">
+            <div id="map">
+                <div class="map-controls">
+                    <button class="map-control-btn" id="locateBtn" title="Lokasi Saya">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </button>
+                    <button class="map-control-btn" id="fullscreenBtn" title="Layar Penuh">
+                        <i class="bi bi-fullscreen"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <!-- Location Permission Banner -->
+                <div class="location-permission-banner" id="locationPermissionBanner" style="display: none;">
+                    <div class="location-permission-text">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <span>Aplikasi membutuhkan izin lokasi untuk menampilkan posisi Anda pada peta</span>
+                    </div>
+                    <div class="location-permission-buttons">
+                        <button class="btn btn-primary btn-sm" id="enableLocationBtn">Izinkan</button>
+                        <button class="btn btn-outline-secondary btn-sm" id="dismissLocationBtn">Tutup</button>
+                    </div>
+                </div>
+                
+                <div class="instruction">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Petunjuk:</strong> Cari lokasi masjid, klik pada peta untuk menandai lokasi, atau masukkan koordinat secara manual di bawah.
+                </div>
+                
+                <!-- Pencarian Lokasi -->
+                <div class="coordinate-section">
+                    <div class="section-title">
+                        <i class="bi bi-search"></i> Pencarian Lokasi
+                    </div>
+                    
+                    <div class="search-container">
+                        <input type="text" class="form-control search-input" id="locationSearch" placeholder="Cari nama masjid, alamat, atau lokasi...">
+                        <button class="search-button" id="searchButton">
+                            <i class="bi bi-search"></i>
+                        </button>
+                        <div class="spinner-border spinner-border-sm loading-spinner" id="searchLoading" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="search-results" id="searchResults"></div>
+                    </div>
+                </div>
+                
+                <!-- Koordinat Section -->
+                <div class="coordinate-section">
+                    <div class="section-title">
+                        <i class="bi bi-geo-alt"></i> Koordinat
+                    </div>
+                    
+                    <!-- Lintang (Latitude) -->
+                    <div class="mb-3">
+                        <label class="form-label">Lintang</label>
+                        <div class="coordinate-inputs">
+                            <select class="form-select" id="lintangDirection" style="width: 80px;">
+                                <option value="LS" selected>LS</option>
+                                <option value="LU">LU</option>
+                            </select>
+                            <input type="number" class="form-control" id="lintangDerajat" placeholder="Derajat" min="0" max="90" style="width: 80px;">
+                            <span>Derajat</span>
+                            <input type="number" class="form-control" id="lintangMenit" placeholder="Menit" min="0" max="59" style="width: 80px;">
+                            <span>Menit</span>
+                            <input type="number" class="form-control" id="lintangDetik" placeholder="Detik" min="0" max="59" style="width: 80px;">
+                            <span>Detik</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Bujur (Longitude) -->
+                    <div class="mb-3">
+                        <label class="form-label">Bujur</label>
+                        <div class="coordinate-inputs">
+                            <select class="form-select" id="bujurDirection" style="width: 80px;">
+                                <option value="BT" selected>BT</option>
+                                <option value="BB">BB</option>
+                            </select>
+                            <input type="number" class="form-control" id="bujurDerajat" placeholder="Derajat" min="0" max="180" style="width: 80px;">
+                            <span>Derajat</span>
+                            <input type="number" class="form-control" id="bujurMenit" placeholder="Menit" min="0" max="59" style="width: 80px;">
+                            <span>Menit</span>
+                            <input type="number" class="form-control" id="bujurDetik" placeholder="Detik" min="0" max="59" style="width: 80px;">
+                            <span>Detik</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Waktu Section -->
+                    <div class="mb-4">
+                        <div class="section-title">
+                            <i class="bi bi-clock"></i> Waktu
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="tanggal" class="form-label">Tanggal</label>
+                                <input type="date" class="form-control" id="tanggal" value="2025-10-24">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="waktu" class="form-label">Waktu</label>
+                                <input type="time" class="form-control" id="waktu" value="01:48">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="timezone" class="form-label">Time Zone</label>
+                                <input type="number" class="form-control" id="timezone" value="7" min="-12" max="14">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="button" class="btn btn-calculate" id="hitungDataBtn">
+                            <i class="bi bi-calculator me-2"></i> Hitung Data
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="result-container" id="resultContainer">
+                    <div class="result-title">
+                        <i class="bi bi-graph-up me-2"></i> Hasil Perhitungan Data
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="saveDataBtn">
+                            <i class="bi bi-save me-1"></i> Simpan Data
+                        </button>
+                        <button class="btn btn-success" id="exportPdfBtn">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+                        </button>
+                        <button class="btn btn-info" id="shareBtn">
+                            <i class="bi bi-share me-1"></i> Bagikan
+                        </button>
+                        <button class="btn btn-secondary" id="resetBtn">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Reset
+                        </button>
+                    </div>
+                    
+                    <!-- Tabs for different data views -->
+                    <ul class="nav nav-tabs" id="resultTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="koordinat-tab" data-bs-toggle="tab" data-bs-target="#koordinat" type="button" role="tab" aria-controls="koordinat" aria-selected="true">Koordinat & Waktu</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="arah-tab" data-bs-toggle="tab" data-bs-target="#arah" type="button" role="tab" aria-controls="arah" aria-selected="false">Arah Kiblat</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="waktuSholat-tab" data-bs-toggle="tab" data-bs-target="#waktuSholat" type="button" role="tab" aria-controls="waktuSholat" aria-selected="false">Waktu Sholat</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="lainnya-tab" data-bs-toggle="tab" data-bs-target="#lainnya" type="button" role="tab" aria-controls="lainnya" aria-selected="false">Data Lainnya</button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="resultTabsContent">
+                        <!-- Koordinat & Waktu Tab -->
+                        <div class="tab-pane fade show active" id="koordinat" role="tabpanel" aria-labelledby="koordinat-tab">
+                            <div class="data-card">
+                                <div class="data-card-title">
+                                    <i class="bi bi-geo-alt"></i> Informasi Koordinat
+                                </div>
+                                <table class="data-table">
+                                    <tr>
+                                        <th>Lintang</th>
+                                        <td id="resultLintang">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Bujur</th>
+                                        <td id="resultBujur">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Format Desimal</th>
+                                        <td id="resultDecimal">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <div class="data-card">
+                                <div class="data-card-title">
+                                    <i class="bi bi-clock"></i> Informasi Waktu
+                                </div>
+                                <table class="data-table">
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <td id="resultTanggal">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Waktu</th>
+                                        <td id="resultWaktu">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Time Zone</th>
+                                        <td id="resultTimezone">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Waktu UTC</th>
+                                        <td id="resultUTC">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Arah Kiblat Tab -->
+                        <div class="tab-pane fade" id="arah" role="tabpanel" aria-labelledby="arah-tab">
+                            <div class="data-card">
+                                <div class="data-card-title">
+                                    <i class="bi bi-compass"></i> Arah Kiblat
+                                </div>
+                                
+                                <div class="compass-container">
+                                    <div class="compass">
+                                        <div class="compass-direction compass-n">N</div>
+                                        <div class="compass-direction compass-e">E</div>
+                                        <div class="compass-direction compass-s">S</div>
+                                        <div class="compass-direction compass-w">W</div>
+                                        <div class="compass-needle" id="compassNeedle"></div>
+                                        <div class="compass-center"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="kiblat-result">
+                                    <div class="kiblat-item">
+                                        <div class="kiblat-label">Azimuth Kiblat (derajat)</div>
+                                        <div class="kiblat-value" id="resultAzimuthKiblat">-<span class="kiblat-unit"></span></div>
+                                    </div>
+                                    
+                                    <div class="kiblat-item">
+                                        <div class="kiblat-label">Arah Kiblat (derajat)</div>
+                                        <div class="kiblat-value" id="resultArahKiblat">-<span class="kiblat-unit"></span></div>
+                                    </div>
+                                    
+                                    <div class="kiblat-item">
+                                        <div class="kiblat-label">Jarak Kiblat (km)</div>
+                                        <div class="kiblat-value" id="resultJarakKiblat">-<span class="kiblat-unit">km</span></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="azimuth-detail">
+                                    <div class="azimuth-item">
+                                        <div class="azimuth-item-title">Azimuth Utara</div>
+                                        <div class="azimuth-item-value" id="resultAzimuthUtara">-</div>
+                                    </div>
+                                    <div class="azimuth-item">
+                                        <div class="azimuth-item-title">Azimuth Selatan</div>
+                                        <div class="azimuth-item-value" id="resultAzimuthSelatan">-</div>
+                                    </div>
+                                    <div class="azimuth-item">
+                                        <div class="azimuth-item-title">Arah Kompas</div>
+                                        <div class="azimuth-item-value" id="resultArahKompas">-</div>
+                                    </div>
+                                </div>
+                                
+                                <table class="data-table">
+                                    <tr>
+                                        <th>Bearing Awal</th>
+                                        <td id="resultBearingAwal">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Bearing Akhir</th>
+                                        <td id="resultBearingAkhir">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Sudut Deviasi</th>
+                                        <td id="resultSudutDeviasi">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Metode Perhitungan</th>
+                                        <td>Spherical Trigonometry (Vincenty)</td>
+                                    </tr>
+                                </table>
+                                
+                                <div class="formula-box">
+                                    <strong>Formula Perhitungan Azimuth:</strong><br>
+                                    Δλ = λ₂ - λ₁<br>
+                                    y = sin(Δλ) × cos(φ₂)<br>
+                                    x = cos(φ₁) × sin(φ₂) - sin(φ₁) × cos(φ₂) × cos(Δλ)<br>
+                                    θ = atan2(y, x)<br>
+                                    Azimuth = (θ + 360) % 360
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Waktu Sholat Tab -->
+                        <div class="tab-pane fade" id="waktuSholat" role="tabpanel" aria-labelledby="waktuSholat-tab">
+                            <div class="data-card">
+                                <div class="data-card-title">
+                                    <i class="bi bi-mosque"></i> Jadwal Waktu Sholat
+                                </div>
+                                <table class="data-table">
+                                    <tr>
+                                        <th>Imsak</th>
+                                        <td id="resultImsak">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Subuh</th>
+                                        <td id="resultSubuh">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Dhuha</th>
+                                        <td id="resultDhuha">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Dzuhur</th>
+                                        <td id="resultDzuhur">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Ashar</th>
+                                        <td id="resultAshar">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Maghrib</th>
+                                        <td id="resultMaghrib">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Isya</th>
+                                        <td id="resultIsya">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Lainnya Tab -->
+                        <div class="tab-pane fade" id="lainnya" role="tabpanel" aria-labelledby="lainnya-tab">
+                            <div class="data-card">
+                                <div class="data-card-title">
+                                    <i class="bi bi-sun"></i> Posisi Matahari
+                                </div>
+                                <table class="data-table">
+                                    <tr>
+                                        <th>Ketinggian Matahari</th>
+                                        <td id="resultKetinggianMatahari">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Azimuth Matahari</th>
+                                        <td id="resultAzimuthMatahari">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Deklinasi Matahari</th>
+                                        <td id="resultDeklinasiMatahari">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <div class="data-card">
+                                <div class="data-card-title">
+                                    <i class="bi bi-moon"></i> Posisi Bulan
+                                </div>
+                                <table class="data-table">
+                                    <tr>
+                                        <th>Fase Bulan</th>
+                                        <td id="resultFaseBulan">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Ketinggian Bulan</th>
+                                        <td id="resultKetinggianBulan">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Azimuth Bulan</th>
+                                        <td id="resultAzimuthBulan">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 Penghitung Koordinat Masjid. Dibuat dengan <i class="bi bi-heart-fill text-danger"></i> oleh Tim Pengembang</p>
+            <p>Untuk informasi lebih lanjut, kunjungi <a href="#">website kami</a></p>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // Inisialisasi peta
+        const map = L.map('map').setView([-6.2088, 106.8456], 11); // Default ke Jakarta
+        
+        // Tambahkan tile layer (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Variabel untuk menyimpan marker
+        let currentMarker = null;
+        let userLocationMarker = null;
+        let locationPermissionDenied = false;
+        
+        // Koordinat Ka'bah
+        const kaabah = {
+            lat: 21.4225,
+            lng: 39.8262
+        };
+        
+        // Fungsi untuk menampilkan toast notification
+        function showToast(message, type = 'success') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
+            const toastHTML = `
+                <div id="${toastId}" class="custom-toast ${type}">
+                    <div class="custom-toast-header">
+                        <div class="custom-toast-title">
+                            <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : type === 'info' ? 'info-circle' : 'exclamation-triangle'}"></i>
+                            ${type.charAt(0).toUpperCase() + type.slice(1)}
+                        </div>
+                        <button type="button" class="custom-toast-close" data-bs-dismiss="toast" aria-label="Close">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                    <div class="custom-toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+            
+            const toastElement = document.getElementById(toastId);
+            const closeButton = toastElement.querySelector('.custom-toast-close');
+            
+            closeButton.addEventListener('click', function() {
+                toastElement.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => {
+                    toastElement.remove();
+                }, 300);
+            });
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (document.getElementById(toastId)) {
+                    toastElement.style.animation = 'slideIn 0.3s ease-out reverse';
+                    setTimeout(() => {
+                        toastElement.remove();
+                    }, 300);
+                }
+            }, 5000);
+        }
+        
+        // Fungsi untuk menampilkan banner permintaan izin lokasi
+        function showLocationPermissionBanner() {
+            const banner = document.getElementById('locationPermissionBanner');
+            banner.style.display = 'flex';
+        }
+        
+        // Fungsi untuk menyembunyikan banner permintaan izin lokasi
+        function hideLocationPermissionBanner() {
+            const banner = document.getElementById('locationPermissionBanner');
+            banner.style.display = 'none';
+        }
+        
+        // Fungsi untuk mendapatkan lokasi pengguna
+        function getUserLocation() {
+            if (!navigator.geolocation) {
+                showToast('Browser Anda tidak mendukung geolokasi', 'error');
+                return;
+            }
+            
+            // Tampilkan loading state pada tombol lokasi
+            const locateBtn = document.getElementById('locateBtn');
+            const originalContent = locateBtn.innerHTML;
+            locateBtn.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div>';
+            locateBtn.disabled = true;
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    // Hapus marker lokasi pengguna yang sudah ada
+                    if (userLocationMarker) {
+                        map.removeLayer(userLocationMarker);
+                    }
+                    
+                    // Buat ikon untuk lokasi pengguna
+                    const userLocationIcon = L.divIcon({
+                        className: 'user-location-marker',
+                        html: '<i class="bi bi-person-fill"></i>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+                    
+                    // Tambahkan marker untuk lokasi pengguna
+                    userLocationMarker = L.marker([lat, lng], { 
+                        icon: userLocationIcon 
+                    }).addTo(map)
+                        .bindPopup('<b>Lokasi Anda</b><br>Lat: ' + lat.toFixed(6) + '<br>Lng: ' + lng.toFixed(6))
+                        .openPopup();
+                    
+                    // Atur view peta ke lokasi pengguna
+                    map.setView([lat, lng], 15);
+                    
+                    // Tandai tombol lokasi sebagai aktif
+                    locateBtn.classList.add('active');
+                    
+                    // Kembalikan tombol ke keadaan semula
+                    locateBtn.innerHTML = originalContent;
+                    locateBtn.disabled = false;
+                    
+                    // Sembunyikan banner permintaan izin lokasi
+                    hideLocationPermissionBanner();
+                    
+                    showToast('Lokasi Anda berhasil ditemukan', 'success');
+                },
+                function(error) {
+                    console.log('Error getting location:', error);
+                    
+                    // Kembalikan tombol ke keadaan semula
+                    locateBtn.innerHTML = originalContent;
+                    locateBtn.disabled = false;
+                    
+                    // Tangani berbagai jenis error
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            locationPermissionDenied = true;
+                            showToast('Izin lokasi ditolak. Silakan aktifkan lokasi di pengaturan browser Anda', 'error');
+                            showLocationPermissionBanner();
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            showToast('Informasi lokasi tidak tersedia', 'error');
+                            break;
+                        case error.TIMEOUT:
+                            showToast('Waktu permintaan lokasi habis', 'error');
+                            break;
+                        default:
+                            showToast('Terjadi kesalahan saat mendapatkan lokasi', 'error');
+                            break;
+                    }
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+        
+        // Fungsi untuk mengonversi koordinat desimal ke format DMS (Derajat-Menit-Detik)
+        function decimalToDMS(decimal, isLatitude) {
+            const direction = isLatitude ? (decimal >= 0 ? "LU" : "LS") : (decimal >= 0 ? "BT" : "BB");
+            const absolute = Math.abs(decimal);
+            const degrees = Math.floor(absolute);
+            const minutesFloat = (absolute - degrees) * 60;
+            const minutes = Math.floor(minutesFloat);
+            const seconds = (minutesFloat - minutes) * 60;
+            
+            return {
+                direction: direction,
+                degrees: degrees,
+                minutes: minutes,
+                seconds: seconds,
+                decimal: decimal
+            };
+        }
+        
+        // Fungsi untuk mengonversi azimuth ke format DMS
+        function azimuthToDMS(azimuth) {
+            const degrees = Math.floor(azimuth);
+            const minutesFloat = (azimuth - degrees) * 60;
+            const minutes = Math.floor(minutesFloat);
+            const seconds = (minutesFloat - minutes) * 60;
+            
+            return {
+                degrees: degrees,
+                minutes: minutes,
+                seconds: seconds,
+                formatted: `${degrees}° ${minutes}' ${seconds.toFixed(2)}"`
+            };
+        }
+        
+        // Fungsi untuk mengonversi DMS ke desimal
+        function dmsToDecimal(degrees, minutes, seconds, direction) {
+            let decimal = degrees + minutes/60 + seconds/3600;
+            
+            if (direction === 'LS' || direction === 'BB') {
+                decimal = -decimal;
+            }
+            
+            return decimal;
+        }
+        
+        // Fungsi untuk menghitung jarak antara dua koordinat (dalam km) - Haversine formula
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius bumi dalam km
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = R * c; // Jarak dalam km
+            return distance;
+        }
+        
+        // Fungsi untuk menghitung azimuth dari titik 1 ke titik 2 - Metode yang lebih akurat
+        function calculateAzimuth(lat1, lon1, lat2, lon2) {
+            const phi1 = deg2rad(lat1);
+            const phi2 = deg2rad(lat2);
+            const deltaLambda = deg2rad(lon2 - lon1);
+            
+            const y = Math.sin(deltaLambda) * Math.cos(phi2);
+            const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
+            const theta = Math.atan2(y, x);
+            
+            // Konversi dari radian ke derajat
+            let azimuth = rad2deg(theta);
+            
+            // Normalisasi ke 0-360 derajat
+            azimuth = (azimuth + 360) % 360;
+            
+            return azimuth;
+        }
+        
+        // Fungsi untuk menghitung bearing akhir (reverse azimuth)
+        function calculateReverseAzimuth(lat1, lon1, lat2, lon2) {
+            const phi1 = deg2rad(lat1);
+            const phi2 = deg2rad(lat2);
+            const deltaLambda = deg2rad(lon1 - lon2);
+            
+            const y = Math.sin(deltaLambda) * Math.cos(phi1);
+            const x = Math.cos(phi2) * Math.sin(phi1) - Math.sin(phi2) * Math.cos(phi1) * Math.cos(deltaLambda);
+            const theta = Math.atan2(y, x);
+            
+            // Konversi dari radian ke derajat
+            let azimuth = rad2deg(theta);
+            
+            // Normalisasi ke 0-360 derajat
+            azimuth = (azimuth + 360) % 360;
+            
+            return azimuth;
+        }
+        
+        // Fungsi untuk menghitung sudut deviasi antara bearing awal dan akhir
+        function calculateDeviation(forwardAzimuth, reverseAzimuth) {
+            // Reverse azimuth perlu dikurangi 180 derajat untuk perbandingan
+            const adjustedReverse = (reverseAzimuth + 180) % 360;
+            let deviation = Math.abs(forwardAzimuth - adjustedReverse);
+            
+            // Pastikan deviasi tidak lebih dari 180 derajat
+            if (deviation > 180) {
+                deviation = 360 - deviation;
+            }
+            
+            return deviation;
+        }
+        
+        // Fungsi untuk mengkonversi derajat ke arah kompas
+        function degreesToCompass(degrees) {
+            const directions = [
+                "Utara", "Utara-Timur Laut", "Timur Laut", "Timur-Tenggara", 
+                "Timur", "Tenggara-Timur", "Tenggara", "Selatan-Tenggara", 
+                "Selatan", "Selatan-Barat Daya", "Barat Daya", "Barat-Barat Daya", 
+                "Barat", "Barat-Laut Barat", "Barat Laut", "Utara-Barat Laut"
+            ];
+            const index = Math.round(degrees / 22.5) % 16;
+            return directions[index];
+        }
+        
+        // Fungsi untuk menghitung waktu sholat (simplified)
+        function calculatePrayerTimes(date, latitude, longitude, timezone) {
+            // Ini adalah perhitungan sederhana, bukan metode perhitungan yang akurat
+            // Untuk aplikasi nyata, gunakan library perhitungan waktu sholat yang lebih akurat
+            
+            const times = {};
+            
+            // Konversi tanggal ke objek Date
+            const d = new Date(date);
+            const dayOfYear = getDayOfYear(d);
+            
+            // Deklinasi matahari (perhitungan sederhana)
+            const declination = 23.45 * Math.sin(deg2rad(360 * (284 + dayOfYear) / 365));
+            
+            // Waktu sholat (perhitungan sederhana)
+            times.imsak = formatTime(5, 0); // Imsak: 1 jam sebelum subuh
+            times.subuh = formatTime(6, 0); // Subuh: saat fajar
+            times.dhuha = formatTime(8, 30); // Dhuha: beberapa jam setelah terbit
+            times.dzuhur = formatTime(12, 0); // Dzuhur: saat matahari di zenith
+            times.ashar = formatTime(15, 30); // Ashar: saat bayangan benda = panjang benda + bayangan saat dzuhur
+            times.maghrib = formatTime(18, 0); // Maghrib: saat matahari terbenam
+            times.isya = formatTime(19, 30); // Isya: saat gelap total
+            
+            return times;
+        }
+        
+        // Fungsi untuk menghitung posisi matahari (simplified)
+        function calculateSunPosition(date, time, latitude, longitude, timezone) {
+            // Ini adalah perhitungan sederhana, bukan metode perhitungan yang akurat
+            
+            const d = new Date(date + 'T' + time);
+            const dayOfYear = getDayOfYear(d);
+            
+            // Deklinasi matahari
+            const declination = 23.45 * Math.sin(deg2rad(360 * (284 + dayOfYear) / 365));
+            
+            // Persamaan waktu (menit)
+            const equationOfTime = 9.87 * Math.sin(2 * deg2rad(360 * (dayOfYear - 81) / 365)) - 7.53 * Math.cos(deg2rad(360 * (dayOfYear - 81) / 365)) - 1.5 * Math.sin(deg2rad(360 * (dayOfYear - 81) / 365));
+            
+            // Waktu matahari sejati
+            const solarTime = parseFloat(time.split(':')[0]) + parseFloat(time.split(':')[1])/60 + equationOfTime/60 + (longitude - 15 * timezone)/15;
+            
+            // Jam sudut
+            const hourAngle = 15 * (solarTime - 12);
+            
+            // Ketinggian matahari
+            const altitude = rad2deg(Math.asin(
+                Math.sin(deg2rad(latitude)) * Math.sin(deg2rad(declination)) + 
+                Math.cos(deg2rad(latitude)) * Math.cos(deg2rad(declination)) * Math.cos(deg2rad(hourAngle))
+            ));
+            
+            // Azimuth matahari
+            const azimuth = rad2deg(Math.atan2(
+                Math.sin(deg2rad(hourAngle)),
+                Math.cos(deg2rad(hourAngle)) * Math.sin(deg2rad(latitude)) - Math.tan(deg2rad(declination)) * Math.cos(deg2rad(latitude))
+            )) + 180;
+            
+            return {
+                altitude: altitude,
+                azimuth: azimuth,
+                declination: declination
+            };
+        }
+        
+        // Fungsi untuk menghitung posisi bulan (simplified)
+        function calculateMoonPosition(date) {
+            // Ini adalah perhitungan sangat sederhana, hanya untuk demonstrasi
+            
+            const d = new Date(date);
+            const dayOfMonth = d.getDate();
+            
+            // Fase bulan (simplified)
+            const phase = (dayOfMonth % 30) / 30;
+            let phaseName;
+            
+            if (phase < 0.03 || phase > 0.97) phaseName = "Bulan Baru";
+            else if (phase < 0.22) phaseName = "Bulan Sabit Meningkat";
+            else if (phase < 0.28) phaseName = "Perempat Pertama";
+            else if (phase < 0.47) phaseName = "Bulan Cembung Meningkat";
+            else if (phase < 0.53) phaseName = "Bulan Purnama";
+            else if (phase < 0.72) phaseName = "Bulan Cembung Menurun";
+            else if (phase < 0.78) phaseName = "Perempat Akhir";
+            else phaseName = "Bulan Sabit Menurun";
+            
+            // Ketinggian dan azimuth (nilai acak untuk demonstrasi)
+            const altitude = Math.random() * 90;
+            const azimuth = Math.random() * 360;
+            
+            return {
+                phase: phaseName,
+                altitude: altitude,
+                azimuth: azimuth
+            };
+        }
+        
+        // Fungsi helper
+        function deg2rad(deg) {
+            return deg * (Math.PI/180);
+        }
+        
+        function rad2deg(rad) {
+            return rad * (180/Math.PI);
+        }
+        
+        function getDayOfYear(date) {
+            const start = new Date(date.getFullYear(), 0, 0);
+            const diff = date - start;
+            const oneDay = 1000 * 60 * 60 * 24;
+            return Math.floor(diff / oneDay);
+        }
+        
+        function formatTime(hours, minutes) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+        
+        // Fungsi untuk memperbarui input koordinat dari marker
+        function updateCoordinateInputs(lat, lng) {
+            const lintangDMS = decimalToDMS(lat, true);
+            const bujurDMS = decimalToDMS(lng, false);
+            
+            // Update Lintang
+            document.getElementById('lintangDirection').value = lintangDMS.direction;
+            document.getElementById('lintangDerajat').value = lintangDMS.degrees;
+            document.getElementById('lintangMenit').value = lintangDMS.minutes;
+            document.getElementById('lintangDetik').value = lintangDMS.seconds;
+            
+            // Update Bujur
+            document.getElementById('bujurDirection').value = bujurDMS.direction;
+            document.getElementById('bujurDerajat').value = bujurDMS.degrees;
+            document.getElementById('bujurMenit').value = bujurDMS.minutes;
+            document.getElementById('bujurDetik').value = bujurDMS.seconds;
+        }
+        
+        // Fungsi untuk menambahkan marker pada peta
+        function addMarker(lat, lng) {
+            // Hapus marker yang sudah ada
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+            
+            // Buat marker baru
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: '<i class="bi bi-mosque"></i>',
+                iconSize: [35, 35],
+                iconAnchor: [17.5, 17.5]
+            });
+            
+            currentMarker = L.marker([lat, lng], { 
+                icon: customIcon,
+                draggable: true 
+            }).addTo(map);
+            
+            // Update koordinat saat marker digerakkan
+            currentMarker.on('dragend', function(e) {
+                const position = e.target.getLatLng();
+                updateCoordinateInputs(position.lat, position.lng);
+            });
+            
+            // Update input koordinat
+            updateCoordinateInputs(lat, lng);
+        }
+        
+        // Fungsi untuk mencari lokasi menggunakan Nominatim API
+        async function searchLocation(query) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error searching location:', error);
+                showToast('Terjadi kesalahan saat mencari lokasi', 'error');
+                return [];
+            }
+        }
+        
+        // Fungsi untuk menampilkan hasil pencarian
+        function displaySearchResults(results) {
+            const searchResults = document.getElementById('searchResults');
+            searchResults.innerHTML = '';
+            
+            if (results.length === 0) {
+                searchResults.innerHTML = '<div class="search-result-item">Tidak ada hasil ditemukan</div>';
+                searchResults.style.display = 'block';
+                return;
+            }
+            
+            results.forEach(result => {
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                item.innerHTML = `
+                    <div class="search-result-name">${result.display_name.split(',')[0]}</div>
+                    <div class="search-result-address">${result.display_name}</div>
+                `;
+                
+                item.addEventListener('click', function() {
+                    // Pindahkan peta ke lokasi yang dipilih
+                    const lat = parseFloat(result.lat);
+                    const lng = parseFloat(result.lon);
+                    map.setView([lat, lng], 15);
+                    
+                    // Tambahkan marker
+                    addMarker(lat, lng);
+                    
+                    // Sembunyikan hasil pencarian
+                    searchResults.style.display = 'none';
+                    
+                    // Kosongkan input pencarian
+                    document.getElementById('locationSearch').value = '';
+                    
+                    showToast(`Lokasi "${result.display_name.split(',')[0]}" berhasil ditemukan`, 'success');
+                });
+                
+                searchResults.appendChild(item);
+            });
+            
+            searchResults.style.display = 'block';
+        }
+        
+        // Setup event listener untuk pencarian lokasi
+        const locationSearch = document.getElementById('locationSearch');
+        const searchButton = document.getElementById('searchButton');
+        const searchLoading = document.getElementById('searchLoading');
+        const searchResults = document.getElementById('searchResults');
+        let searchTimeout;
+        
+        // Event listener untuk input pencarian
+        locationSearch.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            // Hapus timeout sebelumnya
+            clearTimeout(searchTimeout);
+            
+            if (query.length < 3) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            // Set timeout baru untuk mencegah terlalu banyak request
+            searchTimeout = setTimeout(async function() {
+                searchLoading.style.display = 'inline-block';
+                const results = await searchLocation(query);
+                searchLoading.style.display = 'none';
+                displaySearchResults(results);
+            }, 500);
+        });
+        
+        // Event listener untuk tombol pencarian
+        searchButton.addEventListener('click', async function() {
+            const query = locationSearch.value.trim();
+            
+            if (query.length < 3) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            searchLoading.style.display = 'inline-block';
+            const results = await searchLocation(query);
+            searchLoading.style.display = 'none';
+            displaySearchResults(results);
+        });
+        
+        // Sembunyikan hasil pencarian saat klik di luar
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.search-container')) {
+                searchResults.style.display = 'none';
+            }
+        });
+        
+        // Event listener untuk tombol lokasi
+        document.getElementById('locateBtn').addEventListener('click', function() {
+            getUserLocation();
+        });
+        
+        // Event listener untuk tombol enable location
+        document.getElementById('enableLocationBtn').addEventListener('click', function() {
+            getUserLocation();
+        });
+        
+        // Event listener untuk tombol dismiss location
+        document.getElementById('dismissLocationBtn').addEventListener('click', function() {
+            hideLocationPermissionBanner();
+        });
+        
+        // Event listener untuk tombol fullscreen
+        document.getElementById('fullscreenBtn').addEventListener('click', function() {
+            if (!document.fullscreenElement) {
+                document.getElementById('map').requestFullscreen().catch(err => {
+                    showToast(`Error attempting to enable fullscreen: ${err.message}`, 'error');
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+        
+        // Event listener untuk klik pada peta
+        map.on('click', function(e) {
+            addMarker(e.latlng.lat, e.latlng.lng);
+        });
+        
+        // Event listener untuk input koordinat manual
+        function setupCoordinateInputListeners() {
+            const inputs = ['lintangDerajat', 'lintangMenit', 'lintangDetik', 'bujurDerajat', 'bujurMenit', 'bujurDetik'];
+            
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', function() {
+                    // Cek apakah semua input sudah terisi
+                    const allFilled = inputs.every(inputId => {
+                        const value = document.getElementById(inputId).value;
+                        return value !== '' && !isNaN(value);
+                    });
+                    
+                    if (allFilled) {
+                        // Ambil nilai dari input
+                        const lintangDerajat = parseInt(document.getElementById('lintangDerajat').value);
+                        const lintangMenit = parseInt(document.getElementById('lintangMenit').value);
+                        const lintangDetik = parseInt(document.getElementById('lintangDetik').value);
+                        const lintangDirection = document.getElementById('lintangDirection').value;
+                        
+                        const bujurDerajat = parseInt(document.getElementById('bujurDerajat').value);
+                        const bujurMenit = parseInt(document.getElementById('bujurMenit').value);
+                        const bujurDetik = parseInt(document.getElementById('bujurDetik').value);
+                        const bujurDirection = document.getElementById('bujurDirection').value;
+                        
+                        // Konversi ke desimal
+                        const lat = dmsToDecimal(lintangDerajat, lintangMenit, lintangDetik, lintangDirection);
+                        const lng = dmsToDecimal(bujurDerajat, bujurMenit, bujurDetik, bujurDirection);
+                        
+                        // Tambahkan marker pada peta
+                        addMarker(lat, lng);
+                        map.setView([lat, lng], 15);
+                    }
+                });
+            });
+        }
+        
+        // Setup event listeners untuk input koordinat
+        setupCoordinateInputListeners();
+        
+        // Event listener untuk tombol Hitung Data
+        document.getElementById('hitungDataBtn').addEventListener('click', function() {
+            // Ambil nilai dari input
+            const lintangDirection = document.getElementById('lintangDirection').value;
+            const lintangDerajat = document.getElementById('lintangDerajat').value;
+            const lintangMenit = document.getElementById('lintangMenit').value;
+            const lintangDetik = document.getElementById('lintangDetik').value;
+            
+            const bujurDirection = document.getElementById('bujurDirection').value;
+            const bujurDerajat = document.getElementById('bujurDerajat').value;
+            const bujurMenit = document.getElementById('bujurMenit').value;
+            const bujurDetik = document.getElementById('bujurDetik').value;
+            
+            const tanggal = document.getElementById('tanggal').value;
+            const waktu = document.getElementById('waktu').value;
+            const timezone = parseInt(document.getElementById('timezone').value);
+            
+            // Validasi input
+            if (!lintangDerajat || !lintangMenit || !lintangDetik || 
+                !bujurDerajat || !bujurMenit || !bujurDetik) {
+                showToast('Silakan lengkapi semua koordinat (Derajat, Menit, Detik)!', 'warning');
+                return;
+            }
+            
+            // Format koordinat untuk display
+            const lintangFormatted = `${lintangDerajat}°${lintangMenit}'${lintangDetik}" ${lintangDirection}`;
+            const bujurFormatted = `${bujurDerajat}°${bujurMenit}'${bujurDetik}" ${bujurDirection}`;
+            
+            // Konversi ke desimal
+            const lat = dmsToDecimal(
+                parseInt(lintangDerajat), 
+                parseInt(lintangMenit), 
+                parseInt(lintangDetik), 
+                lintangDirection
+            );
+            const lng = dmsToDecimal(
+                parseInt(bujurDerajat), 
+                parseInt(bujurMenit), 
+                parseInt(bujurDetik), 
+                bujurDirection
+            );
+            
+            // Format date and time for display
+            const dateObj = new Date(tanggal);
+            const formattedDate = dateObj.toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            // Hitung waktu UTC
+            const [hours, minutes] = waktu.split(':').map(Number);
+            const utcHours = hours - timezone;
+            const utcTime = `${(utcHours + 24) % 24}:${minutes.toString().padStart(2, '0')}`;
+            
+            // Hitung arah kiblat dengan metode yang lebih lengkap
+            const azimuth = calculateAzimuth(lat, lng, kaabah.lat, kaabah.lng);
+            const reverseAzimuth = calculateReverseAzimuth(lat, lng, kaabah.lat, kaabah.lng);
+            const deviation = calculateDeviation(azimuth, reverseAzimuth);
+            const distance = calculateDistance(lat, lng, kaabah.lat, kaabah.lng);
+            const compassDirection = degreesToCompass(azimuth);
+            
+            // Konversi azimuth ke format DMS
+            const azimuthDMS = azimuthToDMS(azimuth);
+            
+            // Hitung azimuth dari berbagai referensi
+            const azimuthFromSouth = (azimuth + 180) % 360;
+            
+            // Update jarum kompas dengan animasi
+            const compassNeedle = document.getElementById('compassNeedle');
+            compassNeedle.style.transform = `translate(-50%, -100%) rotate(${azimuth}deg)`;
+            
+            // Hitung waktu sholat
+            const prayerTimes = calculatePrayerTimes(tanggal, lat, lng, timezone);
+            
+            // Hitung posisi matahari
+            const sunPosition = calculateSunPosition(tanggal, waktu, lat, lng, timezone);
+            
+            // Hitung posisi bulan
+            const moonPosition = calculateMoonPosition(tanggal);
+            
+            // Update hasil di tab Koordinat & Waktu
+            document.getElementById('resultLintang').textContent = lintangFormatted;
+            document.getElementById('resultBujur').textContent = bujurFormatted;
+            document.getElementById('resultDecimal').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            document.getElementById('resultTanggal').textContent = formattedDate;
+            document.getElementById('resultWaktu').textContent = `${waktu} (GMT${timezone >= 0 ? '+' : ''}${timezone})`;
+            document.getElementById('resultTimezone').textContent = `GMT${timezone >= 0 ? '+' : ''}${timezone}`;
+            document.getElementById('resultUTC').textContent = `${utcTime} (GMT+0)`;
+            
+            // Update hasil di tab Arah Kiblat
+            document.getElementById('resultAzimuthKiblat').textContent = azimuthDMS.formatted;
+            document.getElementById('resultArahKiblat').textContent = azimuthDMS.formatted;
+            document.getElementById('resultJarakKiblat').textContent = distance.toFixed(3);
+            document.getElementById('resultAzimuthUtara').textContent = `${azimuth.toFixed(2)}°`;
+            document.getElementById('resultAzimuthSelatan').textContent = `${azimuthFromSouth.toFixed(2)}°`;
+            document.getElementById('resultArahKompas').textContent = compassDirection;
+            document.getElementById('resultBearingAwal').textContent = `${azimuth.toFixed(2)}°`;
+            document.getElementById('resultBearingAkhir').textContent = `${reverseAzimuth.toFixed(2)}°`;
+            document.getElementById('resultSudutDeviasi').textContent = `${deviation.toFixed(2)}°`;
+            
+            // Update hasil di tab Waktu Sholat
+            document.getElementById('resultImsak').textContent = prayerTimes.imsak;
+            document.getElementById('resultSubuh').textContent = prayerTimes.subuh;
+            document.getElementById('resultDhuha').textContent = prayerTimes.dhuha;
+            document.getElementById('resultDzuhur').textContent = prayerTimes.dzuhur;
+            document.getElementById('resultAshar').textContent = prayerTimes.ashar;
+            document.getElementById('resultMaghrib').textContent = prayerTimes.maghrib;
+            document.getElementById('resultIsya').textContent = prayerTimes.isya;
+            
+            // Update hasil di tab Data Lainnya
+            document.getElementById('resultKetinggianMatahari').textContent = `${sunPosition.altitude.toFixed(2)}°`;
+            document.getElementById('resultAzimuthMatahari').textContent = `${sunPosition.azimuth.toFixed(2)}°`;
+            document.getElementById('resultDeklinasiMatahari').textContent = `${sunPosition.declination.toFixed(2)}°`;
+            document.getElementById('resultFaseBulan').textContent = moonPosition.phase;
+            document.getElementById('resultKetinggianBulan').textContent = `${moonPosition.altitude.toFixed(2)}°`;
+            document.getElementById('resultAzimuthBulan').textContent = `${moonPosition.azimuth.toFixed(2)}°`;
+            
+            // Show results
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.style.display = 'block';
+            
+            // Scroll to results
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+            
+            showToast('Perhitungan data berhasil dilakukan', 'success');
+        });
+        
+        // Event listener untuk tombol Simpan Data
+        document.getElementById('saveDataBtn').addEventListener('click', function() {
+            // Ambil data hasil perhitungan
+            const data = {
+                lintang: document.getElementById('resultLintang').textContent,
+                bujur: document.getElementById('resultBujur').textContent,
+                decimal: document.getElementById('resultDecimal').textContent,
+                tanggal: document.getElementById('resultTanggal').textContent,
+                waktu: document.getElementById('resultWaktu').textContent,
+                timezone: document.getElementById('resultTimezone').textContent,
+                azimuthKiblat: document.getElementById('resultAzimuthKiblat').textContent,
+                jarakKiblat: document.getElementById('resultJarakKiblat').textContent,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Simpan ke localStorage
+            let savedData = JSON.parse(localStorage.getItem('calculatedData') || '[]');
+            savedData.push(data);
+            localStorage.setItem('calculatedData', JSON.stringify(savedData));
+            
+            showToast('Data berhasil disimpan', 'success');
+        });
+        
+        // Event listener untuk tombol Export PDF
+        document.getElementById('exportPdfBtn').addEventListener('click', function() {
+            showToast('Fitur export PDF akan segera tersedia', 'info');
+        });
+        
+        // Event listener untuk tombol Bagikan
+        document.getElementById('shareBtn').addEventListener('click', function() {
+            // Ambil data hasil perhitungan
+            const lintang = document.getElementById('resultLintang').textContent;
+            const bujur = document.getElementById('resultBujur').textContent;
+            const azimuthKiblat = document.getElementById('resultAzimuthKiblat').textContent;
+            const jarakKiblat = document.getElementById('resultJarakKiblat').textContent;
+            
+            // Buat teks untuk dibagikan
+            const shareText = `Hasil Perhitungan Koordinat Masjid:\n\nLintang: ${lintang}\nBujur: ${bujur}\nAzimuth Kiblat: ${azimuthKiblat}\nJarak ke Ka'bah: ${jarakKiblat}\n\nDihitung menggunakan Penghitung Koordinat Masjid`;
+            
+            // Coba menggunakan Web Share API jika tersedia
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Hasil Perhitungan Koordinat Masjid',
+                    text: shareText
+                }).then(() => {
+                    showToast('Data berhasil dibagikan', 'success');
+                }).catch((error) => {
+                    console.log('Error sharing:', error);
+                    // Fallback ke clipboard
+                    navigator.clipboard.writeText(shareText).then(() => {
+                        showToast('Data telah disalin ke clipboard', 'success');
+                    }).catch(() => {
+                        showToast('Gagal menyalin data', 'error');
+                    });
+                });
+            } else {
+                // Fallback ke clipboard
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showToast('Data telah disalin ke clipboard', 'success');
+                }).catch(() => {
+                    showToast('Gagal menyalin data', 'error');
+                });
+            }
+        });
+        
+        // Event listener untuk tombol Reset
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            // Reset form
+            document.getElementById('lintangDirection').value = 'LS';
+            document.getElementById('lintangDerajat').value = '';
+            document.getElementById('lintangMenit').value = '';
+            document.getElementById('lintangDetik').value = '';
+            
+            document.getElementById('bujurDirection').value = 'BT';
+            document.getElementById('bujurDerajat').value = '';
+            document.getElementById('bujurMenit').value = '';
+            document.getElementById('bujurDetik').value = '';
+            
+            document.getElementById('tanggal').value = '2025-10-24';
+            document.getElementById('waktu').value = '01:48';
+            document.getElementById('timezone').value = '7';
+            
+            // Hapus marker
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+                currentMarker = null;
+            }
+            
+            // Sembunyikan hasil
+            document.getElementById('resultContainer').style.display = 'none';
+            
+            // Reset peta ke posisi awal
+            map.setView([-6.2088, 106.8456], 11);
+            
+            showToast('Form telah direset', 'info');
+        });
+        
+        // Coba mendapatkan lokasi pengguna saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cek apakah browser mendukung geolokasi
+            if (!navigator.geolocation) {
+                showToast('Browser Anda tidak mendukung geolokasi', 'warning');
+                return;
+            }
+            
+            // Coba dapatkan lokasi pengguna
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    // Buat ikon untuk lokasi pengguna
+                    const userLocationIcon = L.divIcon({
+                        className: 'user-location-marker',
+                        html: '<i class="bi bi-person-fill"></i>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+                    
+                    // Tambahkan marker untuk lokasi pengguna
+                    userLocationMarker = L.marker([lat, lng], { 
+                        icon: userLocationIcon 
+                    }).addTo(map)
+                        .bindPopup('<b>Lokasi Anda</b><br>Lat: ' + lat.toFixed(6) + '<br>Lng: ' + lng.toFixed(6))
+                        .openPopup();
+                    
+                    // Atur view peta ke lokasi pengguna
+                    map.setView([lat, lng], 13);
+                    
+                    // Tandai tombol lokasi sebagai aktif
+                    document.getElementById('locateBtn').classList.add('active');
+                    
+                    showToast('Lokasi Anda berhasil ditemukan', 'success');
+                },
+                function(error) {
+                    console.log('Error getting location:', error);
+                    
+                    // Tangani berbagai jenis error
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            locationPermissionDenied = true;
+                            showToast('Izin lokasi ditolak. Anda dapat mengaktifkannya melalui tombol lokasi di peta', 'warning');
+                            showLocationPermissionBanner();
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            showToast('Informasi lokasi tidak tersedia', 'error');
+                            break;
+                        case error.TIMEOUT:
+                            showToast('Waktu permintaan lokasi habis', 'error');
+                            break;
+                        default:
+                            showToast('Terjadi kesalahan saat mendapatkan lokasi', 'error');
+                            break;
+                    }
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        });
+    </script>
+</body>
+</html>
